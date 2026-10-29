@@ -1,0 +1,3065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>FIREWALL DEFENDER — Enterprise Cybersecurity Operations Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   ENTERPRISE CYBERSECURITY DESIGN SYSTEM (Classic & Professional SOC)
+   Palette: Deep Midnight Slate / Cyan Laser / Emerald Defense / Crimson Threat
+   Typography: Plus Jakarta Sans (Headings/UI) + JetBrains Mono (Packets/Data)
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg-deep: #050811;
+  --bg-surface: #0a101f;
+  --bg-card: rgba(12, 20, 36, 0.85);
+  --bg-card-hover: rgba(18, 30, 54, 0.92);
+  --bg-panel: rgba(8, 14, 26, 0.95);
+  
+  --cyan: #00f0ff;
+  --cyan-glow: 0 0 16px rgba(0, 240, 255, 0.4), 0 0 32px rgba(0, 240, 255, 0.15);
+  --cyan-soft: rgba(0, 240, 255, 0.12);
+  --cyan-border: rgba(0, 240, 255, 0.3);
+  
+  --green: #10b981;
+  --green-glow: 0 0 16px rgba(16, 185, 129, 0.4), 0 0 32px rgba(16, 185, 129, 0.15);
+  --green-soft: rgba(16, 185, 129, 0.12);
+  --green-border: rgba(16, 185, 129, 0.35);
+
+  --red: #f43f5e;
+  --red-glow: 0 0 16px rgba(244, 63, 94, 0.4), 0 0 32px rgba(244, 63, 94, 0.15);
+  --red-soft: rgba(244, 63, 94, 0.12);
+  --red-border: rgba(244, 63, 94, 0.4);
+
+  --amber: #f59e0b;
+  --amber-glow: 0 0 16px rgba(245, 158, 11, 0.35);
+  --amber-soft: rgba(245, 158, 11, 0.12);
+
+  --purple: #a855f7;
+  --purple-soft: rgba(168, 85, 247, 0.12);
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(0, 240, 255, 0.45);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+
+  --shadow-hud: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 1px rgba(0, 240, 255, 0.2);
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  font-family: var(--font-sans);
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Ambient Cyber Mesh Background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
+    radial-gradient(circle at 85% 85%, rgba(168, 85, 247, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 15% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+    linear-gradient(rgba(0, 240, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Subtle Vignette Scanline */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 65%, rgba(5, 8, 17, 0.85) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---- Game Root Layout ---- */
+#game-root {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  overflow: hidden;
+  box-shadow: 0 0 80px rgba(0, 0, 0, 0.85);
+}
+
+/* ---- Enterprise Top Telemetry Bar ---- */
+#top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 18px;
+  background: rgba(10, 16, 31, 0.88);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+  min-height: 52px;
+  gap: 12px;
+}
+#top-bar.hidden { display: none; }
+
+.tb-section-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tb-section-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.tb-section-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Shield Integrity Units */
+.tb-shields {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+.tb-shield-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-right: 4px;
+}
+.shield-unit {
+  width: 14px;
+  height: 18px;
+  background: var(--green);
+  border-radius: 3px;
+  box-shadow: 0 0 8px var(--green);
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.shield-unit::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: rgba(255, 255, 255, 0.35);
+}
+.shield-unit.lost {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+/* Level Indicator */
+.tb-level-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--cyan);
+  background: var(--cyan-soft);
+  border: 1px solid var(--cyan-border);
+  padding: 3px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tb-radar-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--cyan);
+  border-radius: 50%;
+  animation: pulseDot 1.5s infinite;
+}
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 6px var(--cyan); }
+  50% { opacity: 0.4; transform: scale(0.8); box-shadow: none; }
+}
+
+/* Score & Combo */
+.tb-score-box {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-mono);
+}
+.tb-score-lbl {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+.tb-score-val {
+  color: #fbbf24;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+}
+.tb-combo-badge {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(168, 85, 247, 0.15));
+  border: 1px solid var(--cyan-border);
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  animation: comboPulse 0.5s ease;
+  white-space: nowrap;
+}
+@keyframes comboPulse {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Top Bar Utility Buttons */
+.tb-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+  font-family: var(--font-mono);
+}
+.tb-btn:hover {
+  background: var(--cyan-soft);
+  border-color: var(--cyan-border);
+  color: var(--cyan);
+  box-shadow: var(--cyan-glow);
+}
+
+/* ---- Main Container ---- */
+#gc {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ---- Screens ---- */
+.scr {
+  width: 100%;
+  max-width: 760px;
+  animation: fadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Professional Cards ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-hud);
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.6), transparent);
+}
+.card h2 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.3px;
+}
+.card h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--cyan);
+}
+.card p, .card li {
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.card strong {
+  color: var(--text-main);
+}
+.card em {
+  color: var(--cyan);
+  font-style: normal;
+}
+
+/* Avatar Badges */
+.char-prof {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  background: var(--cyan-soft);
+  color: var(--cyan);
+  border: 1px solid var(--cyan-border);
+  margin-right: 6px;
+}
+.char-glitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  background: var(--red-soft);
+  color: var(--red);
+  border: 1px solid var(--red-border);
+  margin-right: 6px;
+}
+
+/* ---- Classic Professional Buttons ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 48px;
+  touch-action: manipulation;
+  border: 1px solid var(--green);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0.08) 100%);
+  color: #34d399;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  text-decoration: none;
+}
+.btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.4) 0%, rgba(16, 185, 129, 0.15) 100%);
+  border-color: #34d399;
+  color: #ffffff;
+  box-shadow: var(--green-glow);
+  transform: translateY(-2px);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.btn-cyan {
+  border-color: var(--cyan);
+  background: linear-gradient(180deg, rgba(0, 240, 255, 0.22) 0%, rgba(0, 240, 255, 0.06) 100%);
+  color: var(--cyan);
+}
+.btn-cyan:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(0, 240, 255, 0.38) 0%, rgba(0, 240, 255, 0.14) 100%);
+  color: #ffffff;
+  border-color: #67e8f9;
+  box-shadow: var(--cyan-glow);
+}
+.btn-red {
+  border-color: var(--red);
+  background: linear-gradient(180deg, rgba(244, 63, 94, 0.22) 0%, rgba(244, 63, 94, 0.06) 100%);
+  color: #fb7185;
+}
+.btn-red:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(244, 63, 94, 0.38) 0%, rgba(244, 63, 94, 0.14) 100%);
+  color: #ffffff;
+  border-color: #fda4af;
+  box-shadow: var(--red-glow);
+}
+.btn-gold {
+  border-color: #f59e0b;
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0.06) 100%);
+  color: #fbbf24;
+}
+.btn-gold:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.38) 0%, rgba(245, 158, 11, 0.14) 100%);
+  color: #ffffff;
+  border-color: #fde68a;
+  box-shadow: var(--amber-glow);
+}
+.btn-outline {
+  border-color: var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+}
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: var(--cyan-soft);
+}
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  min-height: 38px;
+}
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.btn-grp {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+/* ---- Title Screen (Executive Cyber Command) ---- */
+.title-scr {
+  text-align: center;
+  padding: 12px 10px 24px;
+}
+.title-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid var(--cyan-border);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--cyan);
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+.title-logo-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.title-shield-icon {
+  width: 68px;
+  height: 68px;
+  filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.5));
+  animation: floatShield 4s ease-in-out infinite;
+}
+@keyframes floatShield {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.title-main {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #ffffff 30%, #67e8f9 70%, #00f0ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.title-sub {
+  font-size: clamp(0.9rem, 2.2vw, 1.15rem);
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-bottom: 16px;
+  letter-spacing: 0.3px;
+}
+
+.title-cta-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.title-controls-hint {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+}
+
+.mission-dossier {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  max-width: 660px;
+  margin: 0 auto 16px;
+  text-align: left;
+  box-shadow: var(--shadow-hud);
+}
+.mission-dossier-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+.mission-dossier-body p {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+/* Feature Grid Chips */
+.title-features {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  max-width: 660px;
+  margin: 0 auto 12px;
+}
+.feature-chip {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 6px;
+  text-align: center;
+  transition: all 0.2s;
+}
+.feature-chip:hover {
+  border-color: var(--cyan-border);
+  background: var(--cyan-soft);
+  transform: translateY(-2px);
+}
+.feature-chip-icon {
+  font-size: 1.1rem;
+  margin-bottom: 2px;
+}
+.feature-chip-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.feature-chip-desc {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+/* ---- Level Arena (SOC Tactical Radar Grid) ---- */
+.arena-wrapper {
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.arena {
+  position: relative;
+  width: 100%;
+  height: 460px;
+  border: 1px solid var(--cyan-border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(6, 11, 22, 0.96) 0%, rgba(9, 17, 34, 0.98) 100%);
+  overflow: hidden;
+  touch-action: none;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.7), 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Arena Grid Backdrop */
+.arena::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.035) 1px, transparent 1px);
+  background-size: 30px 30px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Arena Zones */
+.zone-tag {
+  position: absolute;
+  left: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  color: var(--text-dim);
+  pointer-events: none;
+  z-index: 2;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.zone-tag-top { top: 8px; }
+.zone-tag-bottom { bottom: 10px; }
+
+/* The Glowing Firewall Laser Line */
+.fw-line {
+  position: absolute;
+  bottom: 50px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--green) 20%, #6ee7b7 50%, var(--green) 80%, transparent);
+  box-shadow: 0 0 16px var(--green), 0 0 32px rgba(16, 185, 129, 0.5);
+  z-index: 5;
+  pointer-events: none;
+}
+.fw-line::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: 0;
+  right: 0;
+  background: repeating-linear-gradient(90deg, rgba(16, 185, 129, 0.15) 0px, rgba(16, 185, 129, 0.15) 8px, transparent 8px, transparent 16px);
+  animation: laserScan 2s linear infinite;
+}
+@keyframes laserScan {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(32px); }
+}
+
+.fw-badge {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--green);
+  letter-spacing: 2px;
+  font-weight: 800;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--green-border);
+  padding: 3px 12px;
+  border-radius: 999px;
+  z-index: 5;
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+/* ---- Classic Data Packets (High-Tech Inspection Frame) ---- */
+.pkt {
+  position: absolute;
+  width: 120px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(13, 22, 42, 0.94);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  z-index: 4;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+.pkt:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 8px 24px rgba(0, 240, 255, 0.35);
+  transform: scale(1.04);
+}
+.pkt-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+}
+.pkt-proto-pill {
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+}
+.pkt-proto-tcp { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+.pkt-proto-udp { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+
+.pkt-flags-pill {
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.pkt-flag-syn { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.pkt-flag-ack { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+.pkt-center {
+  padding: 6px 8px;
+  text-align: center;
+}
+.pkt-port-num {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1;
+}
+.pkt-svc-name {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--cyan);
+  margin-top: 2px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pkt-bottom-row {
+  padding: 3px 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Resolution States */
+.pkt.blocked-good {
+  border-color: var(--green) !important;
+  background: rgba(16, 185, 129, 0.35) !important;
+  box-shadow: var(--green-glow) !important;
+  animation: pktIntercept 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.pkt.blocked-bad {
+  border-color: var(--amber) !important;
+  background: rgba(245, 158, 11, 0.35) !important;
+  box-shadow: var(--amber-glow) !important;
+  animation: pktIntercept 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.pkt.leaked {
+  border-color: var(--red) !important;
+  background: rgba(244, 63, 94, 0.35) !important;
+  box-shadow: var(--red-glow) !important;
+  animation: pktLeakShock 0.5s ease forwards;
+}
+.pkt.passed-safe {
+  border-color: var(--green) !important;
+  background: rgba(16, 185, 129, 0.2) !important;
+  box-shadow: var(--green-glow) !important;
+  opacity: 0 !important;
+  transform: translateY(24px) scale(0.8) !important;
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  pointer-events: none !important;
+}
+.pkt.auto-blocked {
+  border-color: var(--green) !important;
+  background: rgba(16, 185, 129, 0.25) !important;
+  animation: pktIntercept 0.4s ease forwards;
+}
+.pkt.auto-leaked {
+  border-color: var(--red) !important;
+  background: rgba(244, 63, 94, 0.25) !important;
+  animation: pktLeakShock 0.5s ease forwards;
+}
+
+@keyframes pktIntercept {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); filter: brightness(1.6); }
+  100% { transform: scale(0.7); opacity: 0; }
+}
+@keyframes pktLeakShock {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+/* Floating Feedback */
+.fb-float {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 800;
+  pointer-events: none;
+  z-index: 12;
+  animation: floatUpHud 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+@keyframes floatUpHud {
+  0% { opacity: 1; transform: translateY(0) scale(0.95); }
+  20% { transform: translateY(-10px) scale(1.05); }
+  100% { opacity: 0; transform: translateY(-44px) scale(1); }
+}
+.fb-float.good {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.25);
+  border: 1px solid var(--green);
+}
+.fb-float.bad {
+  color: #fb7185;
+  background: rgba(244, 63, 94, 0.25);
+  border: 1px solid var(--red);
+}
+.fb-float.warn {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.25);
+  border: 1px solid var(--amber);
+}
+
+/* Mistake Reason Banner */
+.mistake-reason {
+  position: absolute;
+  bottom: 58px;
+  left: 8%;
+  right: 8%;
+  background: rgba(244, 63, 94, 0.16);
+  border: 1px solid var(--red-border);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  color: #fda4af;
+  z-index: 9;
+  animation: fadeUp 0.3s ease;
+  pointer-events: none;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.mistake-reason strong { color: #ffffff; }
+
+/* Level 3: Threat Feed Header */
+.threat-feed-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  background: rgba(244, 63, 94, 0.08);
+  border-bottom: 1px solid var(--red-border);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #fda4af;
+  z-index: 6;
+  position: relative;
+}
+.threat-feed-led {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: var(--red);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--red);
+  animation: pulseDot 1s infinite;
+  margin-right: 6px;
+}
+.threat-ip-pill {
+  background: rgba(244, 63, 94, 0.18);
+  border: 1px solid var(--red-border);
+  color: #fecdd3;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.68rem;
+}
+
+/* Level 4: Stateful Table Monitor */
+.state-table-hud {
+  padding: 8px 14px;
+  background: rgba(10, 18, 34, 0.95);
+  border-bottom: 1px solid var(--cyan-border);
+  font-size: 0.72rem;
+  z-index: 6;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.state-table-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--cyan);
+  font-weight: 700;
+}
+.conn-tbl {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  border-collapse: collapse;
+}
+.conn-tbl th {
+  background: rgba(0, 240, 255, 0.06);
+  color: var(--text-dim);
+  padding: 4px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+  font-weight: 600;
+}
+.conn-tbl td {
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+}
+.conn-tbl .state-est {
+  color: var(--green);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.conn-tbl .state-est::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--green);
+}
+
+/* Level 5: Volumetric DDoS Boss HUD */
+.boss-hud-bar {
+  padding: 8px 14px;
+  background: rgba(244, 63, 94, 0.12);
+  border-bottom: 1px solid var(--red-border);
+  z-index: 6;
+  position: relative;
+}
+.boss-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  margin-bottom: 5px;
+}
+.boss-info .boss-name {
+  color: #fb7185;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.boss-info .boss-hp {
+  color: #fbbf24;
+  font-weight: 800;
+}
+.boss-track {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--red-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.boss-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #f59e0b 50%, #f43f5e 100%);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.6);
+}
+
+/* Power-Ups Floating Dock */
+.pu-bar {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  z-index: 7;
+  padding: 0 12px;
+}
+.pu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--cyan-border);
+  border-radius: var(--radius-md);
+  background: rgba(10, 20, 38, 0.92);
+  backdrop-filter: blur(8px);
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  touch-action: manipulation;
+}
+.pu-btn:hover:not(:disabled) {
+  background: rgba(0, 240, 255, 0.2);
+  border-color: var(--cyan);
+  box-shadow: var(--cyan-glow);
+  transform: translateY(-2px);
+}
+.pu-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.pu-btn.active {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(16, 185, 129, 0.2);
+  box-shadow: var(--green-glow);
+}
+
+/* Subnet Picker Modal */
+.subnet-picker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-panel);
+  border: 1px solid var(--cyan);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  z-index: 30;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), var(--cyan-glow);
+  min-width: 280px;
+  animation: fadeUp 0.2s ease;
+}
+.subnet-picker h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: 12px;
+}
+.subnet-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.subnet-opt:hover {
+  border-color: var(--cyan);
+  background: var(--cyan-soft);
+  color: var(--cyan);
+}
+
+/* Arena Progress Timer Bar */
+.timer-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.timer-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), #38bdf8);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+  transition: width 0.1s linear;
+}
+
+/* ---- Level 2: Enterprise NGFW Rule Builder ---- */
+.rb-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 14px 0;
+}
+.rb-header-row {
+  display: grid;
+  grid-template-columns: 36px 110px 1fr 100px 36px;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  padding: 0 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.rb-rule-row {
+  display: grid;
+  grid-template-columns: 36px 110px 1fr 100px 36px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.15s;
+}
+.rb-rule-row:hover {
+  border-color: var(--cyan-border);
+  background: rgba(0, 240, 255, 0.03);
+}
+.rb-num {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-align: center;
+}
+.rb-select {
+  background: #090e1a;
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  height: 38px;
+}
+.rb-select:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan-soft);
+}
+.rb-del-btn {
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid var(--red-border);
+  color: var(--red);
+  border-radius: var(--radius-sm);
+  height: 38px;
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.15s;
+}
+.rb-del-btn:hover {
+  background: rgba(244, 63, 94, 0.25);
+  box-shadow: var(--red-glow);
+}
+.rb-default-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(244, 63, 94, 0.06);
+  border: 1px solid var(--red-border);
+  margin-top: 14px;
+}
+.rb-default-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.rb-default-label strong {
+  color: #fda4af;
+}
+
+/* ---- Learn Handbook Modal ---- */
+.info-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 8, 17, 0.92);
+  backdrop-filter: blur(12px);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeUp 0.25s ease;
+}
+.info-overlay .card {
+  max-width: 480px;
+  width: 100%;
+  max-height: 85%;
+  overflow-y: auto;
+  margin-bottom: 0;
+}
+
+/* ---- Interactive SDN Quiz Screen ---- */
+.quiz-q-num {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--cyan);
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.quiz-q {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+.quiz-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.quiz-opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+  min-height: 52px;
+  touch-action: manipulation;
+}
+.quiz-opt:hover:not(.dim) {
+  border-color: var(--cyan);
+  background: var(--cyan-soft);
+  color: var(--text-main);
+  transform: translateX(4px);
+}
+.quiz-opt-letter {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.quiz-opt.correct {
+  border-color: var(--green) !important;
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+}
+.quiz-opt.correct .quiz-opt-letter {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(16, 185, 129, 0.3);
+}
+.quiz-opt.wrong {
+  border-color: var(--red) !important;
+  background: rgba(244, 63, 94, 0.18) !important;
+  color: #fb7185 !important;
+}
+.quiz-opt.wrong .quiz-opt-letter {
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(244, 63, 94, 0.3);
+}
+.quiz-opt.dim {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.exp-panel {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  animation: fadeUp 0.3s ease;
+}
+.exp-panel.good {
+  border-color: var(--green);
+  background: rgba(16, 185, 129, 0.08);
+  color: #34d399;
+}
+.exp-panel.bad {
+  border-color: var(--red);
+  background: rgba(244, 63, 94, 0.08);
+  color: #fda4af;
+}
+.exp-panel .exp-title {
+  font-weight: 800;
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+/* ---- Post-Mortem Recap Screen ---- */
+.recap-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+.recap-card {
+  text-align: center;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+.recap-card .val {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.recap-card .lbl {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.recap-takeaways {
+  list-style: none;
+  padding: 0;
+  margin-top: 10px;
+}
+.recap-takeaways li {
+  padding: 8px 0 8px 24px;
+  position: relative;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+.recap-takeaways li:last-child { border-bottom: none; }
+.recap-takeaways li::before {
+  content: '🛡️';
+  position: absolute;
+  left: 0;
+  font-size: 0.8rem;
+}
+
+/* ---- Victory & Game Over Screens ---- */
+.result-scr {
+  text-align: center;
+  padding: 24px 12px;
+}
+.result-emblem {
+  font-size: 3.8rem;
+  margin-bottom: 12px;
+  animation: floatShield 2.5s ease infinite;
+}
+.rank-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 800;
+  padding: 10px 28px;
+  border: 2px solid;
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.35);
+  margin: 14px 0;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.5px;
+}
+.syl-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 0.82rem;
+  text-align: left;
+}
+.syl-table th {
+  background: rgba(0, 240, 255, 0.06);
+  color: var(--cyan);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--cyan-border);
+  font-weight: 700;
+}
+.syl-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+/* Screen Shake Effect */
+.screen-shake {
+  animation: shakeHud 0.35s ease;
+}
+@keyframes shakeHud {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-5px, 2px); }
+  40% { transform: translate(4px, -3px); }
+  60% { transform: translate(-3px, 3px); }
+  80% { transform: translate(3px, -2px); }
+}
+
+/* Scrollbar Customization */
+#gc::-webkit-scrollbar, .card::-webkit-scrollbar {
+  width: 6px;
+}
+#gc::-webkit-scrollbar-track, .card::-webkit-scrollbar-track {
+  background: transparent;
+}
+#gc::-webkit-scrollbar-thumb, .card::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+#gc::-webkit-scrollbar-thumb:hover {
+  background: var(--cyan);
+}
+
+/* ---- Responsive Tweaks ---- */
+@media(max-width: 680px) {
+  #top-bar { padding: 6px 12px; }
+  .tb-shields { padding: 3px 6px; }
+  .tb-level-badge { max-width: 150px; font-size: 0.68rem; }
+  .tb-score-val { font-size: 0.95rem; }
+  #gc { padding: 10px 8px 18px; }
+  .card { padding: 18px 14px; }
+  .arena { height: 390px; }
+  .pkt { width: 105px; }
+  .pkt-port-num { font-size: 0.92rem; }
+  .rb-header-row { display: none; }
+  .rb-rule-row {
+    grid-template-columns: 24px 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 6px;
+  }
+  .rb-del-btn { grid-column: span 3; width: 100%; height: 32px; }
+  .recap-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="game-root">
+  <div id="top-bar" class="hidden">
+    <div class="tb-section-left">
+      <div class="tb-shields">
+        <span class="tb-shield-label">SHIELD</span>
+        <div id="hrt" style="display:flex;gap:4px;"></div>
+      </div>
+      <div class="tb-score-box">
+        <span class="tb-score-lbl">SCORE</span>
+        <span class="tb-score-val" id="scr-d">0</span>
+      </div>
+    </div>
+    
+    <div class="tb-section-center">
+      <div class="tb-level-badge" id="lvl-d">
+        <span class="tb-radar-dot"></span>
+        <span id="lvl-txt">L1: Port Filtering</span>
+      </div>
+    </div>
+
+    <div class="tb-section-right">
+      <div id="cmb-d"></div>
+      <button class="tb-btn" id="pause-btn" title="Pause Game [Space]">⏸</button>
+      <button class="tb-btn" id="mute-btn" title="Toggle Audio [M]">🔊</button>
+    </div>
+  </div>
+  
+  <div id="gc"></div>
+</div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 1: DATA — Ports, IPs, Levels, SDN Quiz
+   ═══════════════════════════════════════════════════════════════ */
+
+const PORTS = {
+  80:  {name:'HTTP',     safe:true,  reason:'Port 80 serves regular unencrypted web traffic — safe to allow.'},
+  443: {name:'HTTPS',    safe:true,  reason:'Port 443 serves encrypted web traffic (TLS) — safe to allow.'},
+  53:  {name:'DNS',      safe:true,  reason:'Port 53 handles domain name resolution — essential for browsing.'},
+  23:  {name:'Telnet',   safe:false, reason:'Port 23 (Telnet) transmits passwords and data in cleartext. Block it!'},
+  445: {name:'SMB',      safe:false, reason:'Port 445 (SMB) is heavily targeted by ransomware (WannaCry, EternalBlue).'},
+  3389:{name:'RDP',      safe:false, reason:'Port 3389 (Remote Desktop) is probed by botnets for brute-force access.'},
+  6667:{name:'IRC',      safe:false, reason:'Port 6667 (IRC) is commonly used for botnet command-and-control (C2).'},
+  4444:{name:'Backdoor', safe:false, reason:'Port 4444 is the default Metasploit reverse-shell backdoor listener.'},
+  21:  {name:'FTP',      safe:false, reason:'Port 21 (FTP) sends credentials unencrypted. Use SFTP (port 22) instead.'},
+  25:  {name:'SMTP',     safe:false, reason:'Port 25 (SMTP) can be exploited to relay spam if left open to WAN.'},
+  22:  {name:'SSH',      safe:false, reason:'Port 22 (SSH) should never be exposed to public WAN without IP filters.'},
+  1433:{name:'MSSQL',    safe:false, reason:'Port 1433 (MS SQL Server) must remain isolated behind internal VLAN.'},
+  3306:{name:'MySQL',    safe:false, reason:'Port 3306 (MySQL) database port should never be reachable from the internet.'},
+  8080:{name:'Alt-HTTP', safe:false, reason:'Port 8080 is often abused by malware proxies for covert HTTP tunnels.'},
+  161: {name:'SNMP',     safe:false, reason:'Port 161 (SNMP) can leak sensitive network topology data to attackers.'}
+};
+const SAFE_PORTS = [80, 443, 53];
+const DANGER_PORTS = [23, 445, 3389, 6667, 4444, 21, 25, 22, 1433, 3306, 8080, 161];
+
+const THREAT_IPS = ['185.220.101.42','45.155.205.99','91.240.118.15','103.75.201.8','198.51.100.23'];
+const LEGIT_IPS = ['172.217.14.206','151.101.1.140','13.227.95.75','104.16.85.20','140.82.114.3'];
+
+const CONNECTIONS = [
+  {srcIp:'192.168.1.100',srcPort:49152,dstIp:'172.217.14.206',dstPort:443,proto:'TCP',state:'ESTABLISHED',svc:'Google HTTPS'},
+  {srcIp:'192.168.1.100',srcPort:49153,dstIp:'151.101.1.140', dstPort:80, proto:'TCP',state:'ESTABLISHED',svc:'Reddit HTTP'},
+  {srcIp:'192.168.1.100',srcPort:49154,dstIp:'13.227.95.75',  dstPort:443,proto:'TCP',state:'ESTABLISHED',svc:'AWS Cloud CDN'},
+  {srcIp:'192.168.1.101',srcPort:49200,dstIp:'140.82.114.3',  dstPort:443,proto:'TCP',state:'ESTABLISHED',svc:'GitHub HTTPS'}
+];
+
+const BOT_SUBNETS = [
+  {prefix:'185.220.101',name:'Darknet Relay Subnet'},
+  {prefix:'45.155.205', name:'Mirai Botnet Cluster'},
+  {prefix:'91.240.118', name:'Automated Scanner Grid'}
+];
+
+const LEVEL_CFG = [
+  {id:1,name:'Stateless Port Filtering',dur:40,spawn:1850,speed:60, malRatio:.52,showIp:false,showFlags:false,mode:'manual'},
+  {id:2,name:'Firewall Rule Engine',    dur:36,spawn:1500,speed:55, malRatio:.50,showIp:false,showFlags:false,mode:'auto'},
+  {id:3,name:'Threat Intel & IP Blacklist',dur:38,spawn:1400,speed:68, malRatio:.55,showIp:true, showFlags:false,mode:'manual'},
+  {id:4,name:'Stateful Packet Inspection (SPI)',dur:38,spawn:1600,speed:62, malRatio:.52,showIp:true, showFlags:true, mode:'manual'},
+  {id:5,name:'Volumetric DDoS Mitigation',dur:42,spawn:450, speed:105,malRatio:.78,showIp:true, showFlags:false,mode:'manual'}
+];
+
+const LEVEL_INTROS = [
+  /* Level 1 */
+  `<span class="char-prof">🔷 Prof. Router</span> "Welcome to the Cyber Defense Console, Guardian! In Level 1, we deploy <em>Stateless Port Filtering</em> — the foundational layer of perimeter security."<br><br>
+   <strong>Authorized Web Ports:</strong> 80 (HTTP), 443 (HTTPS), 53 (DNS). Allow these through untouched.<br>
+   <strong>Block Dangerous Exploits:</strong> Telnet (23), SMB (445), RDP (3389), IRC (6667), Backdoor (4444), FTP (21).<br><br>
+   <strong style="color:var(--cyan)">Mission Tactic:</strong> Tap or Click any malicious incoming packet to <strong>INTERCEPT & DROP</strong> it before it reaches the firewall line!`,
+  /* Level 2 */
+  `<span class="char-prof">🔷 Prof. Router</span> "Enterprise firewalls do not click packets manually — they evaluate an <em>Ordered Rule Table</em> at wire speed!"<br><br>
+   You will now configure a policy table: each rule specifies an <strong>Action</strong> (ALLOW or DROP), <strong>Port</strong>, and <strong>Protocol</strong>.<br>
+   <em>Key Principle:</em> Rules are evaluated <strong>top-to-bottom</strong> — the <em>first matching rule wins</em>.<br><br>
+   <span class="char-glitch">👾 Dr. Glitch</span> "Think your rule order is foolproof? Let's flood your policy table!"`,
+  /* Level 3 */
+  `<span class="char-prof">🔷 Prof. Router</span> "Attackers often disguise attacks by sending traffic to safe ports (like 443) from <em>known malicious IP addresses</em>!"<br><br>
+   We have activated the <strong>Threat Intelligence Feed</strong> at the top of the radar screen listing active botnet IPs.<br>
+   • Blacklisted Threat IP + any port → <strong>DROP IMMEDIATELY</strong><br>
+   • Unlisted IP + safe port (80/443/53) → <strong>ALLOW</strong><br>
+   • Any IP + dangerous exploit port → <strong>DROP</strong>`,
+  /* Level 4 */
+  `<span class="char-prof">🔷 Prof. Router</span> "A <em>Stateful Firewall (SPI)</em> maintains a dynamic State Table tracking outbound TCP handshakes."<br><br>
+   It only permits inbound packets that are <strong>established replies</strong> to sessions our users initiated.<br><br>
+   <strong>Tactical Rule:</strong> Inspect the <em>Connection Table</em>. Legitimate return packets will carry an <strong>[ACK]</strong> flag matching an active session.<br>
+   Any unsolicited <strong>[SYN]</strong> connection probe originating from the outside must be <strong>DROPPED</strong>!`,
+  /* Level 5 */
+  `<span class="char-glitch">👾 Dr. Glitch</span> "ENOUGH TRICKS! Deploying full-spectrum Volumetric DDoS attack — <em>thousands of syn-flood packets</em> from my botnet subnets!"<br><br>
+   <span class="char-prof">🔷 Prof. Router</span> "Emergency protocols authorized! Deploy your countermeasures:<br>
+   🛑 <strong>Rate Limiting [Key 1]</strong> — Token-bucket throttles all packet velocity for 5 seconds.<br>
+   🔒 <strong>BGP Subnet Drop [Key 2]</strong> — Blackholes an entire malicious /24 botnet subnet for 10 seconds.<br><br>
+   Exhaust Dr. Glitch's attack bandwidth to zero to secure the enterprise network!"`
+];
+
+const LEVEL_RECAPS = [
+  ['Stateless packet filtering operates at Layers 3 & 4 (Network & Transport), checking headers against static criteria.',
+   'Standard safe ports: 80 (HTTP), 443 (HTTPS), 53 (DNS). High-risk ports include 23 (Telnet), 445 (SMB), 3389 (RDP), 4444 (Backdoor).',
+   'Zero-Trust & Least Privilege: Deny by default, only permitting verified business protocol ports.'],
+  ['Firewall rule sets use first-match evaluation: packets are tested sequentially against rules until a match is found.',
+   'Default-DENY (Drop all unmatched packets) is the universal cybersecurity standard over insecure default-allow.',
+   'Rule ordering is critical: more specific rules must always be placed above broad or wildcard rules.'],
+  ['Threat Intelligence (TI) feeds provide real-time Indicators of Compromise (IOCs) including malicious IP reputation.',
+   'Port filtering alone cannot prevent attacks on port 443; IP reputation prevents C2 beacons and malicious relays.',
+   'Multi-layer inspection combines IP reputation, destination port, and protocol verification for deep defense.'],
+  ['Stateful Packet Inspection (SPI) tracks the 4-tuple TCP state machine (SYN, SYN-ACK, ESTABLISHED).',
+   'Inbound packets are automatically dropped unless they correspond to an existing, user-initiated outbound session.',
+   'Stateful firewalls defend against blind spoofing and port scans without requiring open inbound ports.'],
+  ['Distributed Denial of Service (DDoS) attempts to overwhelm firewall state tables and network link capacity.',
+   'Rate limiting (Token Bucket / Leaky Bucket) protects downstream services by throttling excessive packet rates.',
+   'CIDR Subnet null-routing (BGP Blackholing) allows rapid isolation of distributed botnets at scale.']
+];
+
+const SDN_QUIZ = [
+  {
+    q: 'In Software-Defined Networking (SDN), how is the Control Plane decoupled from the Data Plane?',
+    opts: [
+      'The Control Plane is centralized in a software controller that programs switch flow tables',
+      'The Control Plane is distributed redundantly across end-user operating systems',
+      'The Data Plane makes autonomous routing calculations without external policy',
+      'Both planes are merged into physical ASICs on individual legacy switches'
+    ],
+    correct: 0,
+    exp: 'SDN separates the network control logic (Control Plane) from the underlying packet forwarding hardware (Data Plane). A centralized SDN controller (e.g. OpenDaylight, ONOS) maintains a global view of the network and dynamically pushes flow rules down to switches via Southbound APIs.'
+  },
+  {
+    q: 'What is the primary responsibility of the SDN Data Plane (Forwarding Plane)?',
+    opts: [
+      'High-speed wire-rate packet switching based on programmed Flow Tables',
+      'Computing shortest-path Dijkstra algorithms for whole AS topologies',
+      'Managing user biometric access control and LDAP authentications',
+      'Compiling and executing network operating system kernel binaries'
+    ],
+    correct: 0,
+    exp: 'The Data Plane specializes strictly in line-rate forwarding, queuing, and modifying packets as dictated by the switch flow entries installed by the SDN controller, ensuring maximum throughput without processing overhead.'
+  },
+  {
+    q: 'Which protocol is the industry benchmark Southbound API connecting an SDN Controller to Data Plane switches?',
+    opts: [
+      'OpenFlow (programs match-action tables in SDN-enabled switches)',
+      'BGP-4 (Border Gateway Protocol for inter-autonomous routing)',
+      'SNMPv3 (Simple Network Management Protocol for telemetry queries)',
+      'TLS 1.3 (Transport Layer Security for browser encryption)'
+    ],
+    correct: 0,
+    exp: 'OpenFlow is the foundational Southbound interface defined by the Open Networking Foundation (ONF). It allows the centralized controller to directly install, update, and inspect flow table entries in hardware or virtual switches (e.g., Open vSwitch).'
+  }
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 2: PROFESSIONAL HIGH-FIDELITY AUDIO ENGINE
+   ═══════════════════════════════════════════════════════════════ */
+const SFX = (()=>{
+  let ctx = null, muted = false;
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function playTone(freq, dur, type='sine', gain=0.12, endFreq=null) {
+    if (muted) return;
+    try {
+      const c = getCtx();
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, c.currentTime);
+      if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, c.currentTime + dur);
+      g.gain.setValueAtTime(gain, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur);
+      osc.connect(g);
+      g.connect(c.destination);
+      osc.start();
+      osc.stop(c.currentTime + dur);
+    } catch(e) {}
+  }
+  return {
+    block() {
+      // High-tech laser deflect
+      playTone(600, 0.06, 'triangle', 0.15, 950);
+      setTimeout(() => playTone(950, 0.09, 'sine', 0.12), 40);
+    },
+    leak() {
+      // Deep alarm alert
+      playTone(180, 0.22, 'sawtooth', 0.16, 90);
+      setTimeout(() => playTone(140, 0.28, 'sawtooth', 0.14, 70), 90);
+    },
+    overblock() {
+      // Warning penalty blip
+      playTone(420, 0.1, 'sine', 0.1, 280);
+    },
+    click() {
+      playTone(1200, 0.02, 'sine', 0.04);
+    },
+    levelUp() {
+      [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+        setTimeout(() => playTone(f, 0.18, 'triangle', 0.12), i * 85);
+      });
+    },
+    gameOver() {
+      [369.99, 311.13, 261.63, 196.00].forEach((f, i) => {
+        setTimeout(() => playTone(f, 0.28, 'sawtooth', 0.11), i * 140);
+      });
+    },
+    win() {
+      [523, 659, 784, 1047, 1319].forEach((f, i) => {
+        setTimeout(() => playTone(f, 0.2, 'sine', 0.14), i * 100);
+      });
+    },
+    correct() {
+      playTone(587, 0.08, 'sine', 0.12);
+      setTimeout(() => playTone(880, 0.15, 'triangle', 0.14), 70);
+    },
+    wrong() {
+      playTone(280, 0.14, 'sawtooth', 0.1);
+      setTimeout(() => playTone(210, 0.22, 'sawtooth', 0.1), 80);
+    },
+    powerup() {
+      playTone(440, 0.15, 'triangle', 0.12, 1200);
+    },
+    toggle() {
+      muted = !muted;
+      return muted;
+    },
+    isMuted() { return muted; }
+  };
+})();
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 3: STATE MACHINE
+   ═══════════════════════════════════════════════════════════════ */
+const S = {
+  screen: 'title', // title|intro|ruleBuilder|playing|recap|sdnQuiz|gameover|win
+  level: 0,
+  score: 0,
+  hearts: 3,
+  maxHearts: 3,
+  combo: 0,
+  maxCombo: 0,
+  // Level metrics
+  blocked: 0,
+  leaked: 0,
+  falseBlocks: 0,
+  correctAllows: 0,
+  totalPkts: 0,
+  // Loops
+  animFrame: null,
+  spawnTimer: null,
+  levelTimerId: null,
+  lastFrame: 0,
+  gameRunning: false,
+  paused: false,
+  // Packets
+  packets: [],
+  nextId: 0,
+  // Arena
+  arenaEl: null,
+  arenaW: 0,
+  arenaH: 0,
+  fwLineY: 0,
+  // Level 2 Rules
+  userRules: [],
+  defaultAction: 'block',
+  // Level 5 Boss
+  bossHp: 100,
+  bossMaxHp: 100,
+  rateLimitActive: false,
+  rateLimitEnd: 0,
+  rateLimitCoolEnd: 0,
+  blockSubnet: null,
+  blockSubnetEnd: 0,
+  blockSubnetCoolEnd: 0,
+  levelStartTime: 0,
+  levelTimeLeft: 0,
+  levelDuration: 0,
+  levelElapsed: 0
+};
+
+const $ = id => document.getElementById(id);
+const gc = $('gc');
+const topBar = $('top-bar');
+
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function randIp(){return `${randInt(11,219)}.${randInt(1,254)}.${randInt(1,254)}.${randInt(1,254)}`}
+function comboMult(){return 1+Math.floor(S.combo/3)}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 4: TOP BAR & HUD RENDERING
+   ═══════════════════════════════════════════════════════════════ */
+function updateTopBar() {
+  if (S.screen === 'title') {
+    topBar.classList.add('hidden');
+    return;
+  }
+  topBar.classList.remove('hidden');
+
+  // Shield Units
+  let shieldsHtml = '';
+  for (let i = 0; i < S.maxHearts; i++) {
+    shieldsHtml += `<div class="shield-unit ${i < S.hearts ? '' : 'lost'}"></div>`;
+  }
+  $('hrt').innerHTML = shieldsHtml;
+
+  // Score
+  $('scr-d').textContent = S.score.toLocaleString();
+
+  // Combo
+  const cm = comboMult();
+  $('cmb-d').innerHTML = cm > 1 ? `<div class="tb-combo-badge">🔥 x${cm} STREAK</div>` : '';
+
+  // Level Info
+  const lv = LEVEL_CFG[S.level];
+  if (lv) {
+    $('lvl-txt').textContent = `LAB 0${lv.id}: ${lv.name}`;
+  }
+
+  // Pause icon
+  const pauseBtn = $('pause-btn');
+  if (pauseBtn) pauseBtn.textContent = S.paused ? '▶' : '⏸';
+}
+
+function render() {
+  updateTopBar();
+  switch (S.screen) {
+    case 'title':       rTitle(); break;
+    case 'intro':       rIntro(); break;
+    case 'ruleBuilder': rRuleBuilder(); break;
+    case 'playing':     rPlaying(); break;
+    case 'recap':       rRecap(); break;
+    case 'sdnQuiz':     rSdnQuiz(); break;
+    case 'gameover':    rGameOver(); break;
+    case 'win':         rWin(); break;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 5: SCREENS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ---- Title Screen ---- */
+function rTitle() {
+  gc.innerHTML = `
+  <div class="scr title-scr">
+    <div class="title-hero-badge">
+      <span class="tb-radar-dot"></span>
+      SECURITY OPERATIONS CENTER // ZERO-TRUST PROTOCOL
+    </div>
+    
+    <div class="title-logo-wrap">
+      <svg class="title-shield-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 8L18 22V50C18 72 32 89 50 94C68 89 82 72 82 50V22L50 8Z" stroke="#00f0ff" stroke-width="4" fill="rgba(0,240,255,0.08)"/>
+        <path d="M50 18L26 29V50C26 67 36 80 50 84C64 80 74 67 74 50V29L50 18Z" stroke="#10b981" stroke-width="2" fill="rgba(16,185,129,0.06)"/>
+        <path d="M42 48L48 54L60 42" stroke="#00f0ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <h1 class="title-main">FIREWALL DEFENDER</h1>
+    <p class="title-sub">Enterprise Computer Networks & Firewall Architecture Simulator</p>
+
+    <div class="title-cta-box">
+      <button class="btn btn-cyan" id="start-btn" style="min-width:280px;font-size:1rem;box-shadow:var(--cyan-glow);">
+        <span>⚡ INITIALIZE DEFENSE CONSOLE</span>
+        <span>→</span>
+      </button>
+      <div class="title-controls-hint">
+        🎮 <strong>Direct Controls:</strong> Click/Tap Packets to Intercept • Space: Pause • M: Audio • L: Field Intel
+      </div>
+    </div>
+
+    <div class="mission-dossier">
+      <div class="mission-dossier-header">
+        <span>SECURITY BRIEFING // INCIDENT ID #FD-2026</span>
+        <span>DEFENSE GRID: ONLINE</span>
+      </div>
+      <div class="mission-dossier-body">
+        <p>
+          You are the <strong>Perimeter Security Guardian</strong> defending Priya's enterprise network. 
+          Rogue threat actor <em>Dr. Glitch</em> is deploying advanced multi-stage cyber attacks disguised as innocent web traffic.
+        </p>
+        <p>
+          Under the tactical guidance of <em>Prof. Router</em>, you will master essential network security paradigms: 
+          <strong>Stateless Port Filtering</strong>, <strong>Ordered Rule Engines</strong>, <strong>Threat Intelligence</strong>, 
+          <strong>Stateful Packet Inspection (SPI)</strong>, and <strong>Volumetric DDoS Mitigation</strong>.
+        </p>
+      </div>
+    </div>
+
+    <div class="title-features">
+      <div class="feature-chip">
+        <div class="feature-chip-icon">🎯</div>
+        <div class="feature-chip-title">Port Filtering</div>
+        <div class="feature-chip-desc">Layer 4 Headers</div>
+      </div>
+      <div class="feature-chip">
+        <div class="feature-chip-icon">📋</div>
+        <div class="feature-chip-title">Rule Builder</div>
+        <div class="feature-chip-desc">First-Match Logic</div>
+      </div>
+      <div class="feature-chip">
+        <div class="feature-chip-icon">🚨</div>
+        <div class="feature-chip-title">Threat Intel</div>
+        <div class="feature-chip-desc">IP Reputation</div>
+      </div>
+      <div class="feature-chip">
+        <div class="feature-chip-icon">🔄</div>
+        <div class="feature-chip-title">Stateful SPI</div>
+        <div class="feature-chip-desc">Connection Table</div>
+      </div>
+      <div class="feature-chip">
+        <div class="feature-chip-icon">⚡</div>
+        <div class="feature-chip-title">DDoS Defense</div>
+        <div class="feature-chip-desc">Rate Limit & CIDR</div>
+      </div>
+    </div>
+  </div>`;
+
+  $('start-btn').onclick = () => {
+    SFX.click();
+    S.level = 0;
+    S.score = 0;
+    S.hearts = S.maxHearts;
+    S.combo = 0;
+    S.maxCombo = 0;
+    S.screen = 'intro';
+    render();
+  };
+}
+
+/* ---- Level Intro Briefing ---- */
+function rIntro() {
+  const lv = LEVEL_CFG[S.level];
+  gc.innerHTML = `
+  <div class="scr">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-subtle);padding-bottom:12px;margin-bottom:16px;">
+        <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--cyan);font-weight:700;">TACTICAL BRIEFING // MODULE 0${lv.id}</span>
+        <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-dim);">DURATION: ${lv.dur}s</span>
+      </div>
+      <h2>${lv.name}</h2>
+      <div style="margin-top:14px;line-height:1.7;">
+        ${LEVEL_INTROS[S.level]}
+      </div>
+    </div>
+    <div class="btn-grp">
+      <button class="btn btn-cyan" id="go-btn">
+        <span>${S.level === 1 ? 'CONFIG RULE TABLE' : 'COMMENCE LAB'}</span>
+        <span>→</span>
+      </button>
+    </div>
+  </div>`;
+
+  $('go-btn').onclick = () => {
+    SFX.click();
+    if (S.level === 1) {
+      S.screen = 'ruleBuilder';
+      render();
+    } else {
+      startLevel();
+    }
+  };
+}
+
+/* ---- Level 2: Rule Builder ---- */
+function rRuleBuilder() {
+  S.userRules = [
+    { action: 'allow', port: '80',  proto: 'TCP' },
+    { action: 'allow', port: '443', proto: 'TCP' },
+    { action: 'allow', port: '53',  proto: 'ANY' }
+  ];
+  S.defaultAction = 'block';
+  drawRuleBuilder();
+}
+
+function drawRuleBuilder() {
+  let rulesHTML = S.userRules.map((r, i) => `
+    <div class="rb-rule-row" data-i="${i}">
+      <span class="rb-num">#${i + 1}</span>
+      <select class="rb-select rb-action" data-i="${i}">
+        <option value="allow" ${r.action === 'allow' ? 'selected' : ''} style="color:#10b981;">ALLOW (Permit)</option>
+        <option value="block" ${r.action === 'block' ? 'selected' : ''} style="color:#f43f5e;">DROP (Block)</option>
+      </select>
+      <select class="rb-select rb-port" data-i="${i}">
+        <option value="*" ${r.port === '*' ? 'selected' : ''}>Any Port (*)</option>
+        ${Object.keys(PORTS).map(p => `
+          <option value="${p}" ${r.port === p ? 'selected' : ''}>
+            Port ${p} (${PORTS[p].name} — ${PORTS[p].safe ? 'Safe' : 'Dangerous'})
+          </option>`).join('')}
+      </select>
+      <select class="rb-select rb-proto" data-i="${i}">
+        <option value="ANY" ${r.proto === 'ANY' ? 'selected' : ''}>ANY PROTO</option>
+        <option value="TCP" ${r.proto === 'TCP' ? 'selected' : ''}>TCP</option>
+        <option value="UDP" ${r.proto === 'UDP' ? 'selected' : ''}>UDP</option>
+      </select>
+      <button class="rb-del-btn" data-i="${i}" title="Remove Rule">✕</button>
+    </div>`).join('');
+
+  gc.innerHTML = `
+  <div class="scr">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-subtle);padding-bottom:12px;margin-bottom:14px;">
+        <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--cyan);font-weight:700;">NGFW POLICY CONFIGURATOR</span>
+        <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-dim);">${S.userRules.length}/8 RULES</span>
+      </div>
+      <h2>🔧 Next-Gen Firewall Rule Table</h2>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
+        Rules are processed sequentially <strong>top-to-bottom</strong>. The <em>first matching rule</em> determines the packet's fate.
+      </p>
+
+      <div class="rb-header-row">
+        <span>#</span>
+        <span>ACTION</span>
+        <span>DESTINATION PORT</span>
+        <span>PROTOCOL</span>
+        <span>DROP</span>
+      </div>
+
+      <div class="rb-container" id="rules-list">${rulesHTML}</div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-top:14px;">
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-sm btn-cyan" id="add-rule" ${S.userRules.length >= 8 ? 'disabled' : ''}>
+            + ADD RULE
+          </button>
+          <button class="btn btn-sm btn-outline" id="preset-rule">
+            🎯 LOAD CIS BENCHMARK PRESET
+          </button>
+        </div>
+      </div>
+
+      <div class="rb-default-card">
+        <div class="rb-default-label">
+          <strong>Default Firewall Policy</strong> (when no rules match packet):
+        </div>
+        <select class="rb-select" id="def-act" style="min-width:180px;">
+          <option value="block" ${S.defaultAction === 'block' ? 'selected' : ''}>DROP ALL (Default-Deny)</option>
+          <option value="allow" ${S.defaultAction === 'allow' ? 'selected' : ''}>ALLOW ALL (Default-Permit)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-grp">
+      <button class="btn btn-cyan" id="deploy-btn">
+        <span>🚀 DEPLOY POLICY & COMMENCE INSPECTION</span>
+      </button>
+    </div>
+  </div>`;
+
+  // Attach events
+  document.querySelectorAll('.rb-action').forEach(s => s.onchange = e => {
+    S.userRules[+e.target.dataset.i].action = e.target.value;
+  });
+  document.querySelectorAll('.rb-port').forEach(s => s.onchange = e => {
+    S.userRules[+e.target.dataset.i].port = e.target.value;
+  });
+  document.querySelectorAll('.rb-proto').forEach(s => s.onchange = e => {
+    S.userRules[+e.target.dataset.i].proto = e.target.value;
+  });
+  document.querySelectorAll('.rb-del-btn').forEach(b => b.onclick = e => {
+    S.userRules.splice(+e.target.dataset.i, 1);
+    drawRuleBuilder();
+  });
+
+  $('add-rule').onclick = () => {
+    if (S.userRules.length < 8) {
+      S.userRules.push({ action: 'block', port: '*', proto: 'ANY' });
+      drawRuleBuilder();
+    }
+  };
+
+  $('preset-rule').onclick = () => {
+    SFX.click();
+    S.userRules = [
+      { action: 'allow', port: '80',  proto: 'TCP' },
+      { action: 'allow', port: '443', proto: 'TCP' },
+      { action: 'allow', port: '53',  proto: 'ANY' }
+    ];
+    S.defaultAction = 'block';
+    drawRuleBuilder();
+  };
+
+  $('def-act').onchange = e => { S.defaultAction = e.target.value; };
+  $('deploy-btn').onclick = () => {
+    SFX.click();
+    startLevel();
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 6: ACTIVE PLAYING ARENA
+   ═══════════════════════════════════════════════════════════════ */
+
+function cleanup() {
+  S.gameRunning = false;
+  S.paused = false;
+  if (S.animFrame) { cancelAnimationFrame(S.animFrame); S.animFrame = null; }
+  if (S.spawnTimer) { clearInterval(S.spawnTimer); S.spawnTimer = null; }
+  if (S.levelTimerId) { clearTimeout(S.levelTimerId); S.levelTimerId = null; }
+  S.packets = [];
+}
+
+function startLevel() {
+  cleanup();
+  const lv = LEVEL_CFG[S.level];
+  S.blocked = 0; S.leaked = 0; S.falseBlocks = 0; S.correctAllows = 0; S.totalPkts = 0;
+  S.nextId = 0; S.packets = [];
+  S.levelDuration = lv.dur; S.levelElapsed = 0; S.levelTimeLeft = lv.dur;
+
+  if (S.level === 4) {
+    S.bossHp = S.bossMaxHp = 100;
+    S.rateLimitActive = false;
+    S.rateLimitEnd = 0;
+    S.rateLimitCoolEnd = 0;
+    S.blockSubnet = null;
+    S.blockSubnetEnd = 0;
+    S.blockSubnetCoolEnd = 0;
+  }
+
+  S.screen = 'playing';
+  render();
+}
+
+function rPlaying() {
+  const lv = LEVEL_CFG[S.level];
+  let extraTop = '';
+  let extraBottom = '';
+
+  // Level 3: Threat Intelligence Banner
+  if (S.level === 2) {
+    extraTop = `
+    <div class="threat-feed-bar">
+      <div>
+        <span class="threat-feed-led"></span>
+        <strong>THREAT INTELLIGENCE FEED // ACTIVE IOCs:</strong>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${THREAT_IPS.map(ip => `<span class="threat-ip-pill">${ip}</span>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Level 4: Stateful Connection Table
+  if (S.level === 3) {
+    extraTop = `
+    <div class="state-table-hud">
+      <div class="state-table-title">
+        <span>DYNAMIC SPI CONNECTION TABLE (ESTABLISHED SESSIONS)</span>
+        <span style="color:var(--text-dim);">DROP UNMATCHED [SYN] PROBES</span>
+      </div>
+      <table class="conn-tbl">
+        <thead>
+          <tr>
+            <th>INTERNAL (SRC)</th>
+            <th></th>
+            <th>REMOTE (DST)</th>
+            <th>SERVICE</th>
+            <th>STATE</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${CONNECTIONS.map(c => `
+            <tr>
+              <td>${c.srcIp}:${c.srcPort}</td>
+              <td style="color:var(--cyan)">➔</td>
+              <td>${c.dstIp}:${c.dstPort}</td>
+              <td>${c.svc}</td>
+              <td class="state-est">${c.state}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }
+
+  // Level 5: Volumetric DDoS Boss HUD
+  if (S.level === 4) {
+    extraTop = `
+    <div class="boss-hud-bar">
+      <div class="boss-info">
+        <span class="boss-name">
+          <span class="threat-feed-led"></span>
+          DR. GLITCH // BOTNET VOLUMETRIC SYN FLOOD
+        </span>
+        <span class="boss-hp" id="boss-hp-txt">ATTACK POWER: ${S.bossHp}%</span>
+      </div>
+      <div class="boss-track">
+        <div class="boss-fill" id="boss-fill" style="width:100%"></div>
+      </div>
+    </div>`;
+
+    extraBottom = `
+    <div class="pu-bar">
+      <button class="pu-btn" id="pu-rate">
+        <span>🛑</span>
+        <span>RATE LIMIT [1]</span>
+      </button>
+      <button class="pu-btn" id="pu-subnet">
+        <span>🔒</span>
+        <span>DROP CIDR [2]</span>
+      </button>
+    </div>`;
+  }
+
+  gc.innerHTML = `
+  <div class="scr" style="max-width:100%">
+    <div class="timer-bar">
+      <div class="timer-fill" id="timer-fill" style="width:100%"></div>
+    </div>
+    
+    <div class="arena-wrapper">
+      <div class="arena" id="arena">
+        <div class="zone-tag zone-tag-top">
+          <span>▼</span> WAN INGRESS // UNFILTERED PACKET STREAM
+        </div>
+        ${extraTop}
+        
+        <div class="fw-line"></div>
+        <div class="fw-badge">
+          <span>🛡️</span>
+          <span>HARDWARE FIREWALL GATEWAY</span>
+        </div>
+        
+        <div class="zone-tag zone-tag-bottom">
+          <span>▲</span> LAN EGRESS // SECURE SUBNET (192.168.1.0/24)
+        </div>
+        ${extraBottom}
+      </div>
+    </div>
+
+    <div class="btn-grp" style="margin-top:12px">
+      <button class="btn btn-sm btn-gold" id="learn-btn">
+        <span>📖</span>
+        <span>FIELD INTEL MANUAL (−20 PTS)</span>
+      </button>
+    </div>
+  </div>`;
+
+  S.arenaEl = $('arena');
+  const rect = S.arenaEl.getBoundingClientRect();
+  S.arenaW = rect.width;
+  S.arenaH = rect.height;
+  S.fwLineY = S.arenaH - 52;
+
+  // Intercept click / tap handler
+  const blockHandler = (e) => {
+    const pktEl = e.target.closest('.pkt');
+    if (!pktEl || S.paused) return;
+    if (lv.mode === 'auto') return; // Level 2 is auto-filtered
+    e.preventDefault();
+    const id = +pktEl.dataset.id;
+    manualBlock(id);
+  };
+  S.arenaEl.addEventListener('click', blockHandler);
+  S.arenaEl.addEventListener('touchstart', blockHandler, { passive: false });
+
+  $('learn-btn').onclick = () => showLearnOverlay();
+
+  if (S.level === 4) {
+    $('pu-rate').onclick = () => activateRateLimit();
+    $('pu-subnet').onclick = () => showSubnetPicker();
+  }
+
+  // Start Loop
+  S.gameRunning = true;
+  S.levelStartTime = performance.now();
+  S.lastFrame = performance.now();
+
+  spawnPacket();
+  S.spawnTimer = setInterval(spawnPacket, lv.spawn);
+  S.levelTimerId = setTimeout(() => endLevel(), lv.dur * 1000);
+
+  S.animFrame = requestAnimationFrame(gameLoop);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 7: GAME PHYSICS & PACKET EVALUATION
+   ═══════════════════════════════════════════════════════════════ */
+
+function gameLoop(now) {
+  if (!S.gameRunning) return;
+  if (S.paused) {
+    S.animFrame = requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  const dt = (now - S.lastFrame) / 1000;
+  S.lastFrame = now;
+  S.levelElapsed = (now - S.levelStartTime) / 1000;
+  S.levelTimeLeft = Math.max(0, S.levelDuration - S.levelElapsed);
+
+  // Update timer bar
+  const tf = $('timer-fill');
+  if (tf) tf.style.width = `${(S.levelTimeLeft / S.levelDuration) * 100}%`;
+
+  const lv = LEVEL_CFG[S.level];
+
+  // Fall velocity calculation
+  let speed = lv.speed;
+  if (S.level === 4) {
+    speed = lv.speed + S.levelElapsed * 1.5;
+    if (S.rateLimitActive && now < S.rateLimitEnd) {
+      speed *= 0.4;
+    } else if (S.rateLimitActive && now >= S.rateLimitEnd) {
+      S.rateLimitActive = false;
+    }
+  }
+
+  // Boss bar update
+  if (S.level === 4) {
+    const bf = $('boss-fill');
+    const bt = $('boss-hp-txt');
+    if (bf) bf.style.width = `${(S.bossHp / S.bossMaxHp) * 100}%`;
+    if (bt) bt.textContent = `ATTACK POWER: ${Math.max(0, Math.round(S.bossHp))}%`;
+
+    const prBtn = $('pu-rate');
+    const psBtn = $('pu-subnet');
+    if (prBtn) {
+      prBtn.classList.toggle('active', S.rateLimitActive);
+      prBtn.disabled = S.rateLimitActive || now < S.rateLimitCoolEnd;
+    }
+    if (psBtn) {
+      psBtn.classList.toggle('active', !!S.blockSubnet);
+      psBtn.disabled = !!S.blockSubnet || now < S.blockSubnetCoolEnd;
+    }
+    if (S.blockSubnet && now >= S.blockSubnetEnd) S.blockSubnet = null;
+    if (S.bossHp <= 0) { endLevel(); return; }
+  }
+
+  // Move in-flight packets
+  for (let i = S.packets.length - 1; i >= 0; i--) {
+    const p = S.packets[i];
+    if (p.resolved) continue;
+    p.y += speed * dt;
+    if (p.el) p.el.style.top = `${p.y}px`;
+
+    // Reached firewall line?
+    if (p.y >= S.fwLineY) {
+      if (lv.mode === 'auto') {
+        autoFilter(p);
+      } else {
+        if (p.malicious) {
+          threatLeaked(p);
+        } else {
+          correctAllow(p);
+        }
+      }
+    }
+  }
+
+  S.packets = S.packets.filter(p => !p.removed);
+  S.animFrame = requestAnimationFrame(gameLoop);
+}
+
+function spawnPacket() {
+  if (!S.gameRunning || S.paused) return;
+  const rect = S.arenaEl.getBoundingClientRect();
+  S.arenaW = rect.width;
+  const pktW = 120;
+  const x = Math.random() * (S.arenaW - pktW - 24) + 12;
+  let yStart = -75;
+
+  if (S.level === 2) yStart = -75 + 34;
+  if (S.level === 3) yStart = -75 + 85;
+  if (S.level === 4) yStart = -75 + 45;
+
+  const pkt = generatePacket(x, yStart);
+  S.packets.push(pkt);
+  S.totalPkts++;
+
+  // Create High-Tech Packet DOM element
+  const el = document.createElement('div');
+  el.className = 'pkt';
+  el.dataset.id = pkt.id;
+
+  const protoClass = pkt.proto === 'TCP' ? 'pkt-proto-tcp' : 'pkt-proto-udp';
+  let flagHtml = '';
+  if (pkt.flags) {
+    const flagClass = pkt.flags === 'SYN' ? 'pkt-flag-syn' : 'pkt-flag-ack';
+    flagHtml = `<span class="pkt-flags-pill ${flagClass}">${pkt.flags}</span>`;
+  }
+
+  el.innerHTML = `
+    <div class="pkt-top-row">
+      <span class="pkt-proto-pill ${protoClass}">${pkt.proto}</span>
+      ${flagHtml}
+    </div>
+    <div class="pkt-center">
+      <div class="pkt-port-num">:${pkt.dstPort}</div>
+      <div class="pkt-svc-name">${esc(pkt.service)}</div>
+    </div>
+    <div class="pkt-bottom-row">${esc(pkt.srcIp)}</div>
+  `;
+
+  el.style.left = `${x}px`;
+  el.style.top = `${pkt.y}px`;
+  pkt.el = el;
+
+  // Level 5: Subnet powerup auto-block
+  if (S.level === 4 && S.blockSubnet && pkt.srcIp.startsWith(S.blockSubnet)) {
+    pkt.resolved = true;
+    if (pkt.malicious) {
+      S.blocked++; S.score += 20; S.bossHp = Math.max(0, S.bossHp - 1);
+      el.classList.add('blocked-good');
+    } else {
+      S.falseBlocks++; S.score = Math.max(0, S.score - 20);
+      el.classList.add('blocked-bad');
+    }
+    updateTopBar();
+    setTimeout(() => { el.remove(); pkt.removed = true; }, 380);
+    S.arenaEl.appendChild(el);
+    return;
+  }
+
+  S.arenaEl.appendChild(el);
+}
+
+function generatePacket(x, y) {
+  const id = S.nextId++;
+  switch (S.level) {
+    case 0: return genL1(id, x, y);
+    case 1: return genL2(id, x, y);
+    case 2: return genL3(id, x, y);
+    case 3: return genL4(id, x, y);
+    case 4: return genL5(id, x, y);
+    default: return genL1(id, x, y);
+  }
+}
+
+function genL1(id, x, y) {
+  const mal = Math.random() < LEVEL_CFG[0].malRatio;
+  const port = mal ? pick(DANGER_PORTS) : pick(SAFE_PORTS);
+  const p = PORTS[port];
+  return { id, x, y, dstPort: port, service: p.name, proto: Math.random() > 0.3 ? 'TCP' : 'UDP', srcIp: mal ? randIp() : pick(LEGIT_IPS), malicious: mal, reason: p.reason, resolved: false, removed: false, el: null };
+}
+
+function genL2(id, x, y) {
+  const mal = Math.random() < LEVEL_CFG[1].malRatio;
+  const port = mal ? pick(DANGER_PORTS) : pick(SAFE_PORTS);
+  const p = PORTS[port];
+  return { id, x, y, dstPort: port, service: p.name, proto: Math.random() > 0.3 ? 'TCP' : 'UDP', srcIp: randIp(), malicious: mal, reason: p.reason, resolved: false, removed: false, el: null };
+}
+
+function genL3(id, x, y) {
+  const r = Math.random();
+  let srcIp, port, mal, reason;
+  if (r < 0.3) {
+    srcIp = pick(LEGIT_IPS); port = pick(SAFE_PORTS); mal = false; reason = PORTS[port].reason;
+  } else if (r < 0.48) {
+    srcIp = pick(THREAT_IPS); port = pick(SAFE_PORTS); mal = true; reason = 'Blacklisted Threat IP! Must be blocked regardless of destination port.';
+  } else if (r < 0.72) {
+    srcIp = pick(THREAT_IPS); port = pick(DANGER_PORTS); mal = true; reason = `Blacklisted Threat IP on exploit port ${port} (${PORTS[port].name}) — critical drop!`;
+  } else if (r < 0.85) {
+    srcIp = randIp(); port = pick(SAFE_PORTS); mal = false; reason = `Unknown public IP on safe port ${port} (${PORTS[port].name}) — allowed.`;
+  } else {
+    srcIp = randIp(); port = pick(DANGER_PORTS); mal = true; reason = PORTS[port].reason;
+  }
+  return { id, x, y, dstPort: port, service: PORTS[port].name, proto: Math.random() > 0.3 ? 'TCP' : 'UDP', srcIp, malicious: mal, reason, resolved: false, removed: false, el: null };
+}
+
+function genL4(id, x, y) {
+  const isResponse = Math.random() < 0.42;
+  if (isResponse) {
+    const conn = pick(CONNECTIONS);
+    return { id, x, y, dstPort: conn.srcPort, service: conn.svc + ' reply', proto: 'TCP', srcIp: conn.dstIp, flags: 'ACK', malicious: false, reason: `Verified response to established session (${conn.srcIp}:${conn.srcPort} ➔ ${conn.dstIp}:${conn.dstPort}).`, resolved: false, removed: false, el: null };
+  } else {
+    const port = pick([80, 443, 22, 3389, 445, 8080]);
+    const srcIp = Math.random() < 0.4 ? pick(THREAT_IPS) : randIp();
+    return { id, x, y, dstPort: port, service: PORTS[port] ? PORTS[port].name : 'Unknown', proto: 'TCP', srcIp, flags: 'SYN', malicious: true, reason: 'Unsolicited inbound [SYN] packet — no matching session in SPI table. Dropped!', resolved: false, removed: false, el: null };
+  }
+}
+
+function genL5(id, x, y) {
+  const mal = Math.random() < LEVEL_CFG[4].malRatio;
+  let srcIp, port;
+  if (mal) {
+    const subnet = pick(BOT_SUBNETS);
+    srcIp = `${subnet.prefix}.${randInt(1, 254)}`;
+    port = pick([...SAFE_PORTS, ...DANGER_PORTS]);
+  } else {
+    srcIp = pick(LEGIT_IPS);
+    port = pick(SAFE_PORTS);
+  }
+  const p = PORTS[port] || { name: 'PROBE', reason: '' };
+  return { id, x, y, dstPort: port, service: p.name, proto: Math.random() > 0.3 ? 'TCP' : 'UDP', srcIp, malicious: mal, reason: mal ? `DDoS bot flood packet from ${srcIp}` : p.reason, resolved: false, removed: false, el: null };
+}
+
+/* ---- Packet Interception Actions ---- */
+function manualBlock(id) {
+  const p = S.packets.find(pk => pk.id === id);
+  if (!p || p.resolved) return;
+  p.resolved = true;
+  if (p.malicious) {
+    correctBlock(p);
+  } else {
+    overBlock(p);
+  }
+}
+
+function correctBlock(p) {
+  S.blocked++;
+  const mult = comboMult();
+  const pts = 40 * mult;
+  S.score += pts;
+  S.combo++;
+  if (S.combo > S.maxCombo) S.maxCombo = S.combo;
+  SFX.block();
+  p.el.classList.add('blocked-good');
+  floatMsg(p, `+${pts} PTS // INTERCEPT`, 'good');
+  if (S.level === 4) { S.bossHp = Math.max(0, S.bossHp - 1.2); }
+  updateTopBar();
+  setTimeout(() => { p.el.remove(); p.removed = true; }, 380);
+}
+
+function overBlock(p) {
+  S.falseBlocks++;
+  S.score = Math.max(0, S.score - 20);
+  S.combo = 0;
+  SFX.overblock();
+  p.el.classList.add('blocked-bad');
+  floatMsg(p, `−20 PTS // FALSE POSITIVE`, 'warn');
+  showMistakeReason('⚠ FALSE POSITIVE (OVER-BLOCKED)', `Port ${p.dstPort} (${p.service}) is verified legitimate traffic.`);
+  updateTopBar();
+  setTimeout(() => { p.el.remove(); p.removed = true; }, 420);
+}
+
+function threatLeaked(p) {
+  S.leaked++;
+  S.hearts--;
+  S.combo = 0;
+  SFX.leak();
+  p.el.classList.add('leaked');
+  floatMsg(p, `−1 SHIELD // PERIMETER BREACH`, 'bad');
+  showMistakeReason('❌ PERIMETER SECURITY BREACH', p.reason);
+  updateTopBar();
+  if (S.arenaEl) S.arenaEl.classList.add('screen-shake');
+  setTimeout(() => { if (S.arenaEl) S.arenaEl.classList.remove('screen-shake'); }, 350);
+  setTimeout(() => { p.el.remove(); p.removed = true; }, 550);
+  if (S.hearts <= 0) {
+    setTimeout(() => { cleanup(); S.screen = 'gameover'; render(); }, 650);
+  }
+}
+
+function correctAllow(p) {
+  S.correctAllows++;
+  S.score += 10;
+  S.combo++;
+  if (S.combo > S.maxCombo) S.maxCombo = S.combo;
+  p.resolved = true;
+  p.el.classList.add('passed-safe');
+  updateTopBar();
+  setTimeout(() => { p.el.remove(); p.removed = true; }, 260);
+}
+
+/* ---- Level 2: Auto Filter by Rules ---- */
+function autoFilter(p) {
+  p.resolved = true;
+  let matched = null;
+  for (let i = 0; i < S.userRules.length; i++) {
+    const r = S.userRules[i];
+    const portMatch = r.port === '*' || +r.port === p.dstPort;
+    const protoMatch = r.proto === 'ANY' || r.proto === p.proto;
+    if (portMatch && protoMatch) {
+      matched = { action: r.action, num: i + 1 };
+      break;
+    }
+  }
+  if (!matched) matched = { action: S.defaultAction, num: 'DEFAULT' };
+
+  const ruleTag = `RULE #${matched.num}: ${matched.action.toUpperCase()}`;
+
+  if (matched.action === 'block') {
+    if (p.malicious) {
+      S.blocked++; S.score += 40; S.combo++;
+      if (S.combo > S.maxCombo) S.maxCombo = S.combo;
+      SFX.block();
+      p.el.classList.add('auto-blocked');
+      floatMsg(p, `+40 [${ruleTag}]`, 'good');
+    } else {
+      S.falseBlocks++; S.score = Math.max(0, S.score - 20); S.combo = 0;
+      SFX.overblock();
+      p.el.classList.add('blocked-bad');
+      floatMsg(p, `−20 [${ruleTag}]`, 'warn');
+    }
+  } else {
+    if (p.malicious) {
+      S.leaked++; S.hearts--; S.combo = 0;
+      SFX.leak();
+      p.el.classList.add('auto-leaked');
+      floatMsg(p, `−1 SHIELD [${ruleTag}]`, 'bad');
+      if (S.hearts <= 0) {
+        setTimeout(() => { cleanup(); S.screen = 'gameover'; render(); }, 650);
+        return;
+      }
+    } else {
+      S.correctAllows++; S.score += 10; S.combo++;
+      if (S.combo > S.maxCombo) S.maxCombo = S.combo;
+      p.el.classList.add('passed-safe');
+    }
+  }
+  updateTopBar();
+  setTimeout(() => { p.el.remove(); p.removed = true; }, 450);
+}
+
+function floatMsg(p, text, cls) {
+  const fb = document.createElement('div');
+  fb.className = `fb-float ${cls}`;
+  fb.textContent = text;
+  fb.style.left = `${Math.min(S.arenaW - 140, Math.max(10, p.x))}px`;
+  fb.style.top = `${p.y - 10}px`;
+  if (S.arenaEl) S.arenaEl.appendChild(fb);
+  setTimeout(() => fb.remove(), 1800);
+}
+
+function showMistakeReason(title, reason) {
+  document.querySelectorAll('.mistake-reason').forEach(e => e.remove());
+  const el = document.createElement('div');
+  el.className = 'mistake-reason';
+  el.innerHTML = `<strong>${title}</strong> — ${reason}`;
+  if (S.arenaEl) S.arenaEl.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+/* ---- Learn Overlay ---- */
+function showLearnOverlay() {
+  if (S.paused) return;
+  S.paused = true;
+  S.score = Math.max(0, S.score - 20);
+  updateTopBar();
+  SFX.click();
+
+  let content = '';
+  switch (S.level) {
+    case 0:
+      content = `
+        <h3>🔑 Stateless Port Filtering Reference</h3>
+        <p><strong>AUTHORIZED PORTS (ALLOW):</strong></p>
+        <p style="font-family:var(--font-mono);font-size:0.8rem;color:var(--green)">
+          • Port 80 (HTTP) — Plaintext Web<br>
+          • Port 443 (HTTPS) — Encrypted Web<br>
+          • Port 53 (DNS) — Domain Resolution
+        </p>
+        <p><strong>RESTRICTED PORTS (DROP):</strong></p>
+        <p style="font-family:var(--font-mono);font-size:0.8rem;color:var(--red)">
+          • 23 (Telnet), 445 (SMB), 3389 (RDP), 6667 (IRC), 4444 (Backdoor), 21 (FTP), 25 (SMTP), 22 (SSH)
+        </p>`;
+      break;
+    case 1:
+      content = `
+        <h3>📋 Active Policy Ruleset</h3>
+        ${S.userRules.map((r, i) => `
+          <p style="font-family:var(--font-mono);font-size:0.8rem;">
+            #${i + 1}: <strong style="color:${r.action === 'allow' ? 'var(--green)' : 'var(--red)'}">${r.action.toUpperCase()}</strong> :${r.port} [${r.proto}]
+          </p>`).join('')}
+        <p><strong>Default Stance:</strong> ${S.defaultAction.toUpperCase()} ALL</p>`;
+      break;
+    case 2:
+      content = `
+        <h3>🚨 Threat Intelligence IOC Feed</h3>
+        <p>Blacklisted Botnet & C2 IPs:</p>
+        <ul style="font-family:var(--font-mono);font-size:0.8rem;color:var(--red);list-style:none;padding:0;">
+          ${THREAT_IPS.map(ip => `<li>⚠ ${ip}</li>`).join('')}
+        </ul>
+        <p style="margin-top:8px;">Drop any packet from these IPs, even if destination port is 443 or 80!</p>`;
+      break;
+    case 3:
+      content = `
+        <h3>📊 Stateful Connection Tracking (SPI)</h3>
+        <p>Only permit inbound packets matching an <strong>ESTABLISHED</strong> session carrying the <strong>[ACK]</strong> flag.</p>
+        <p>Unsolicited inbound <strong>[SYN]</strong> attempts must be dropped — no internal host requested the connection.</p>`;
+      break;
+    case 4:
+      content = `
+        <h3>⚡ DDoS Mitigation Protocols</h3>
+        <p>🛑 <strong>Rate Limiting [Key 1]:</strong> Token-bucket algorithm dampens traffic surge by 60% for 5s.</p>
+        <p>🔒 <strong>Drop Subnet [Key 2]:</strong> Blackholes an entire malicious /24 CIDR prefix for 10s.</p>`;
+      break;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'info-overlay';
+  overlay.innerHTML = `
+    <div class="card">
+      <h2>📖 SOC Tactical Field Guide</h2>
+      ${content}
+      <div class="btn-grp" style="margin-top:16px;">
+        <button class="btn btn-sm btn-cyan" id="close-learn">RETURN TO DEFENSE CONSOLE</button>
+      </div>
+    </div>`;
+  S.arenaEl.appendChild(overlay);
+  $('close-learn').onclick = () => {
+    overlay.remove();
+    S.paused = false;
+    S.lastFrame = performance.now();
+  };
+}
+
+/* ---- Level 5 Power-Ups ---- */
+function activateRateLimit() {
+  if (S.rateLimitActive || performance.now() < S.rateLimitCoolEnd) return;
+  SFX.powerup();
+  S.rateLimitActive = true;
+  S.rateLimitEnd = performance.now() + 5000;
+  S.rateLimitCoolEnd = performance.now() + 20000;
+}
+
+function showSubnetPicker() {
+  if (S.blockSubnet || performance.now() < S.blockSubnetCoolEnd) return;
+  const picker = document.createElement('div');
+  picker.className = 'subnet-picker';
+  picker.innerHTML = `
+    <h4>Select CIDR Subnet to Blackhole:</h4>
+    ${BOT_SUBNETS.map(s => `
+      <button class="subnet-opt" data-prefix="${s.prefix}">
+        <span>${s.prefix}.0/24</span>
+        <span style="color:var(--text-dim);font-size:0.7rem;">${s.name}</span>
+      </button>`).join('')}
+    <button class="subnet-opt" style="border-color:var(--text-dim);color:var(--text-muted);justify-content:center;">Cancel</button>`;
+
+  picker.querySelectorAll('.subnet-opt').forEach(btn => {
+    btn.onclick = () => {
+      const prefix = btn.dataset.prefix;
+      picker.remove();
+      if (prefix) {
+        SFX.powerup();
+        S.blockSubnet = prefix;
+        S.blockSubnetEnd = performance.now() + 10000;
+        S.blockSubnetCoolEnd = performance.now() + 25000;
+      }
+    };
+  });
+  S.arenaEl.appendChild(picker);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 8: RECAP, QUIZ, WIN & GAMEOVER
+   ═══════════════════════════════════════════════════════════════ */
+
+function endLevel() {
+  cleanup();
+  SFX.levelUp();
+  S.screen = 'recap';
+  render();
+}
+
+function rRecap() {
+  const lv = LEVEL_CFG[S.level];
+  const total = S.blocked + S.leaked + S.falseBlocks + S.correctAllows;
+  const correctDecisions = S.blocked + S.correctAllows;
+  const accuracy = total > 0 ? Math.round((correctDecisions / total) * 100) : 100;
+
+  gc.innerHTML = `
+  <div class="scr">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-subtle);padding-bottom:12px;margin-bottom:14px;">
+        <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--green);font-weight:700;">LAB TELEMETRY REPORT // COMPLETE</span>
+        <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--cyan);">STATUS: PASSED</span>
+      </div>
+      <h2>📊 Module 0${lv.id}: ${lv.name} — Post-Mortem</h2>
+      
+      <div class="recap-grid">
+        <div class="recap-card">
+          <div class="val" style="color:var(--green);">${accuracy}%</div>
+          <div class="lbl">Mitigation Accuracy</div>
+        </div>
+        <div class="recap-card">
+          <div class="val" style="color:var(--cyan);">${S.blocked}</div>
+          <div class="lbl">Threats Neutralized</div>
+        </div>
+        <div class="recap-card">
+          <div class="val" style="color:var(--red);">${S.leaked}</div>
+          <div class="lbl">Perimeter Breaches</div>
+        </div>
+        <div class="recap-card">
+          <div class="val" style="color:var(--amber);">${S.falseBlocks}</div>
+          <div class="lbl">False Positives</div>
+        </div>
+      </div>
+
+      <p style="text-align:center;font-family:var(--font-mono);font-size:0.85rem;color:#fbbf24;margin-top:10px;">
+        PEAK STREAK: x${1 + Math.floor(S.maxCombo / 3)} (${S.maxCombo} in a row) | TOTAL SCORE: ${S.score.toLocaleString()} PTS
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>📚 Core Cybersecurity Principles Mastered</h3>
+      <ul class="recap-takeaways">
+        ${LEVEL_RECAPS[S.level].map(r => `<li>${r}</li>`).join('')}
+      </ul>
+    </div>
+
+    <div class="btn-grp">
+      <button class="btn btn-cyan" id="next-lvl">
+        <span>${S.level >= 4 ? 'TAKE SDN CERTIFICATION EXAM' : 'ADVANCE TO NEXT LAB'}</span>
+        <span>→</span>
+      </button>
+    </div>
+  </div>`;
+
+  $('next-lvl').onclick = () => {
+    SFX.click();
+    S.level++;
+    S.combo = 0; S.maxCombo = 0;
+    if (S.level >= LEVEL_CFG.length) {
+      S.screen = 'sdnQuiz';
+    } else {
+      S.screen = 'intro';
+    }
+    render();
+  };
+}
+
+/* ---- SDN Bonus Quiz ---- */
+function rSdnQuiz() {
+  let qIdx = 0;
+  function drawQ() {
+    if (qIdx >= SDN_QUIZ.length) {
+      SFX.win();
+      S.screen = 'win';
+      render();
+      return;
+    }
+    const q = SDN_QUIZ[qIdx];
+    const letters = ['A', 'B', 'C', 'D'];
+    const shuffledIdx = shuffle(q.opts.map((_, i) => i));
+    const correctShuffled = shuffledIdx.indexOf(q.correct);
+
+    gc.innerHTML = `
+    <div class="scr">
+      <div class="card">
+        <div class="quiz-q-num">SDN ARCHITECTURE CERTIFICATION // QUESTION 0${qIdx + 1} OF 0${SDN_QUIZ.length}</div>
+        <div class="quiz-q">${q.q}</div>
+        <div class="quiz-opts" id="quiz-opts">
+          ${shuffledIdx.map((origI, i) => `
+            <button class="quiz-opt" data-i="${i}">
+              <span class="quiz-opt-letter">${letters[i]}</span>
+              <span>${esc(q.opts[origI])}</span>
+            </button>`).join('')}
+        </div>
+        <div id="exp-area"></div>
+      </div>
+    </div>`;
+
+    document.querySelectorAll('.quiz-opt').forEach(btn => {
+      btn.onclick = () => {
+        const idx = +btn.dataset.i;
+        const correct = idx === correctShuffled;
+        document.querySelectorAll('.quiz-opt').forEach((b, j) => {
+          b.classList.add('dim');
+          if (j === correctShuffled) b.classList.add('correct');
+          if (j === idx && !correct) b.classList.add('wrong');
+        });
+
+        if (correct) {
+          SFX.correct();
+          S.score += 100;
+        } else {
+          SFX.wrong();
+        }
+        updateTopBar();
+
+        const cls = correct ? 'good' : 'bad';
+        const ttl = correct ? '✅ VERIFIED ACCURATE' : '❌ INCORRECT ASSESSMENT';
+        $('exp-area').innerHTML = `
+          <div class="exp-panel ${cls}">
+            <div class="exp-title">${ttl}</div>
+            <div>${q.exp}</div>
+            <div class="btn-grp" style="margin-top:14px;justify-content:flex-end;">
+              <button class="btn btn-sm btn-cyan" id="next-q">PROCEED →</button>
+            </div>
+          </div>`;
+        $('next-q').onclick = () => {
+          SFX.click();
+          qIdx++;
+          drawQ();
+        };
+      };
+    });
+  }
+  drawQ();
+}
+
+/* ---- Game Over Screen ---- */
+function rGameOver() {
+  SFX.gameOver();
+  const lv = LEVEL_CFG[S.level];
+  gc.innerHTML = `
+  <div class="scr result-scr">
+    <div class="result-emblem">⚠️</div>
+    <h2 style="color:var(--red);font-size:1.8rem;margin-bottom:8px;font-weight:900;">
+      PERIMETER SECURITY BREACH
+    </h2>
+    <p style="color:var(--text-muted);font-size:0.95rem;max-width:500px;margin:0 auto;">
+      Dr. Glitch successfully breached the firewall gateway during 
+      <strong>Lab 0${lv.id}: ${lv.name}</strong>.
+    </p>
+
+    <div style="margin:20px 0;font-family:var(--font-mono);font-size:1.1rem;color:#fbbf24;">
+      FINAL SCORE: ${S.score.toLocaleString()} PTS
+    </div>
+
+    <div class="btn-grp">
+      <button class="btn btn-cyan" id="retry-btn">
+        <span>🔄 RETRY LAB</span>
+      </button>
+      <button class="btn btn-red" id="restart-btn">
+        <span>⏮ REBOOT ALL SYSTEMS</span>
+      </button>
+    </div>
+  </div>`;
+
+  $('retry-btn').onclick = () => {
+    SFX.click();
+    S.hearts = S.maxHearts;
+    S.combo = 0;
+    S.screen = 'intro';
+    render();
+  };
+  $('restart-btn').onclick = () => {
+    SFX.click();
+    S.level = 0;
+    S.score = 0;
+    S.hearts = S.maxHearts;
+    S.combo = 0;
+    S.screen = 'title';
+    render();
+  };
+}
+
+/* ---- Victory Screen ---- */
+function rWin() {
+  let rank = '🛡️ SECURITY CADET', rankColor = 'var(--purple)';
+  if (S.score >= 3200) {
+    rank = '⚡ CHIEF INFORMATION SECURITY OFFICER (CISO)'; rankColor = '#fbbf24';
+  } else if (S.score >= 2000) {
+    rank = '🏰 LEAD PERIMETER SECURITY ARCHITECT'; rankColor = 'var(--green)';
+  } else if (S.score >= 1000) {
+    rank = '🔍 SENIOR SOC DEFENSE ANALYST'; rankColor = 'var(--cyan)';
+  }
+
+  gc.innerHTML = `
+  <div class="scr result-scr">
+    <div class="result-emblem">🏆</div>
+    <h2 style="color:var(--green);font-size:1.85rem;margin-bottom:6px;font-weight:900;">
+      ENTERPRISE PERIMETER SECURED!
+    </h2>
+    <p style="color:var(--cyan);font-size:1rem;margin-bottom:14px;">
+      Dr. Glitch has been neutralized. Zero-Trust perimeter integrity verified!
+    </p>
+
+    <div class="rank-badge" style="border-color:${rankColor};color:${rankColor}">
+      ${rank}
+    </div>
+
+    <p style="font-family:var(--font-mono);color:#fbbf24;font-size:1.15rem;margin:10px 0;">
+      TOTAL DEFENSE SCORE: ${S.score.toLocaleString()} PTS
+    </p>
+
+    <div class="card" style="text-align:left;margin-top:20px;">
+      <h3 style="margin-bottom:12px;">📖 Academic Syllabus Alignment Matrix</h3>
+      <table class="syl-table">
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Domain Topic</th>
+            <th>Enterprise Concept</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Lab 1</td><td>Stateless Filtering</td><td>Layer 4 packet filters, well-known port security</td></tr>
+          <tr><td>Lab 2</td><td>Rule Hierarchy</td><td>NGFW ordered rulesets, default-deny vs permit</td></tr>
+          <tr><td>Lab 3</td><td>Threat Intelligence</td><td>IP reputation feeds, IOC blacklisting</td></tr>
+          <tr><td>Lab 4</td><td>Stateful SPI</td><td>TCP 4-tuple connection tables, SYN-flood blocking</td></tr>
+          <tr><td>Lab 5</td><td>DDoS Mitigation</td><td>Volumetric mitigation, token-bucket rate limiting, CIDR null-routing</td></tr>
+          <tr><td>Exam</td><td>SDN Architecture</td><td>Decoupled control/data planes, OpenFlow standard</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="btn-grp" style="margin-top:20px;">
+      <button class="btn btn-cyan" id="play-again">
+        <span>🔄 RUN SIMULATION AGAIN</span>
+      </button>
+    </div>
+  </div>`;
+
+  $('play-again').onclick = () => {
+    SFX.click();
+    S.level = 0; S.score = 0; S.hearts = S.maxHearts; S.combo = 0;
+    S.screen = 'title';
+    render();
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 9: GLOBAL EVENT LISTENERS & HOTKEYS
+   ═══════════════════════════════════════════════════════════════ */
+
+$('mute-btn').onclick = () => {
+  const m = SFX.toggle();
+  $('mute-btn').textContent = m ? '🔇' : '🔊';
+};
+
+$('pause-btn').onclick = () => {
+  if (S.screen !== 'playing') return;
+  S.paused = !S.paused;
+  if (!S.paused) S.lastFrame = performance.now();
+  updateTopBar();
+};
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space' && S.screen === 'playing') {
+    e.preventDefault();
+    S.paused = !S.paused;
+    if (!S.paused) S.lastFrame = performance.now();
+    updateTopBar();
+  }
+  if (e.key === '1' && S.screen === 'playing' && S.level === 4) {
+    activateRateLimit();
+  }
+  if (e.key === '2' && S.screen === 'playing' && S.level === 4) {
+    showSubnetPicker();
+  }
+  if (e.key.toLowerCase() === 'm') {
+    const m = SFX.toggle();
+    $('mute-btn').textContent = m ? '🔇' : '🔊';
+  }
+  if (e.key.toLowerCase() === 'l' && S.screen === 'playing') {
+    showLearnOverlay();
+  }
+});
+
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// Initialize
+render();
+</script>
+</body>
+</html>
